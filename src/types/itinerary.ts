@@ -1,16 +1,17 @@
-import type { LucideIcon } from 'lucide-react';
+
+import type { Icon as LucideIcon } from 'lucide-react'; // Renamed to avoid conflict if Icon is used as a component name
 
 export interface Activity {
   id: string;
   content: string;
-  icon?: LucideIcon; // Using LucideIcon type for icons
-  description?: string; // Optional description for more details
+  icon?: LucideIcon; 
+  description?: string; 
 }
 
 export interface Day {
   id: string;
   title: string;
-  date?: string; // Optional date string for the day
+  date?: string; 
   activityIds: string[];
 }
 
@@ -21,5 +22,5 @@ export interface ItineraryData {
   days: {
     [key: string]: Day;
   };
-  dayOrder: string[]; // Array of day IDs to maintain order
+  dayOrder: string[]; 
 }

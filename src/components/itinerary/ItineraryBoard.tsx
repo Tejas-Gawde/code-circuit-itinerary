@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -6,9 +7,10 @@ import type { ItineraryData, Day as DayType, Activity as ActivityType } from '@/
 import { initialItineraryData } from '@/data/initial-data';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { DayColumn } from './DayColumn';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Save } from 'lucide-react';
+// import { Button } from '@/components/ui/button'; // Add Day button commented out for now
+// import { PlusCircle } from 'lucide-react'; // Add Day button commented out for now
 import { useToast } from "@/hooks/use-toast";
+import { iconMap } from '@/config/icons'; // Import iconMap
 
 const ITINERARY_STORAGE_KEY = 'itineraryFlowData';
 
@@ -83,6 +85,56 @@ export function ItineraryBoard() {
     }));
   };
   
+  const handleAddActivityToDay = (
+    dayId: string, 
+    activityDetails: { title: string; description: string; iconName: string }
+  ) => {
+    setData(prevData => {
+      if (!prevData || !prevData.days || !prevData.activities) return prevData;
+
+      const day = prevData.days[dayId];
+      if (!day) return prevData;
+
+      const newActivityId = `activity-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const SelectedIconComponent = iconMap[activityDetails.iconName] || iconMap['Package']; // Default to Package icon if not found
+
+      const newActivity: ActivityType = {
+        id: newActivityId,
+        content: activityDetails.title,
+        description: activityDetails.description,
+        icon: SelectedIconComponent,
+      };
+
+      const updatedActivities = {
+        ...prevData.activities,
+        [newActivityId]: newActivity,
+      };
+
+      const updatedDay = {
+        ...day,
+        activityIds: [...day.activityIds, newActivityId],
+      };
+
+      const updatedDays = {
+        ...prevData.days,
+        [dayId]: updatedDay,
+      };
+      
+      toast({
+        title: "Activity Added",
+        description: `"${newActivity.content}" added to ${day.title}.`,
+        variant: "default",
+      });
+
+      return {
+        ...prevData,
+        activities: updatedActivities,
+        days: updatedDays,
+      };
+    });
+  };
+
+
   // TODO: Implement Add Day functionality
   // const addDay = () => {
   //   const newDayId = `day-${Object.keys(data.days).length + 1}`;
@@ -103,7 +155,6 @@ export function ItineraryBoard() {
   //    toast({ title: "Day Added", description: `${newDay.title} has been added.` });
   // };
 
-  // Ensure data is loaded on client before rendering DND context
   if (!isClient) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -113,14 +164,12 @@ export function ItineraryBoard() {
   }
   
   if (!data || !data.days || !data.activities) {
-     // This case should ideally be handled by useLocalStorage's initial value or error handling
     return (
       <div className="flex justify-center items-center h-screen">
         <p className="text-lg text-destructive">Error loading itinerary data. Please refresh.</p>
       </div>
     );
   }
-
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -137,7 +186,14 @@ export function ItineraryBoard() {
             const day = data.days[dayId];
             if (!day) return null; 
             const activities = day.activityIds.map(activityId => data.activities[activityId]).filter(Boolean) as ActivityType[];
-            return <DayColumn key={day.id} day={day} activities={activities} />;
+            return (
+              <DayColumn 
+                key={day.id} 
+                day={day} 
+                activities={activities} 
+                onAddActivity={handleAddActivityToDay} 
+              />
+            );
           })}
         </div>
       </div>
