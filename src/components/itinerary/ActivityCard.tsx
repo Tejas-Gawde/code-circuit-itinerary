@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Activity } from '@/types/itinerary';
@@ -11,6 +12,8 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ activity, index }: ActivityCardProps) {
+  const IconComponent = activity.icon; // Assign to an uppercase variable
+
   return (
     <Draggable draggableId={activity.id} index={index}>
       {(provided, snapshot) => (
@@ -26,7 +29,7 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
           >
             <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0">
               <div className="flex items-center gap-2">
-                {activity.icon && <activity.icon className="h-5 w-5 text-primary" />}
+                {IconComponent && <IconComponent className="h-5 w-5 text-primary" />}
                 <CardTitle className="text-base font-medium leading-none">{activity.content}</CardTitle>
               </div>
               <div {...provided.dragHandleProps} className="cursor-grab p-1 text-muted-foreground hover:text-foreground">
