@@ -29,14 +29,15 @@ const PlaneElement = memo(({ plane }: { plane: Plane }) => (
     <div
         className="absolute"
         style={{
-            transform: `translate(${plane.x}px, ${plane.y}px) scale(${plane.scale}) rotate(${plane.rotation}deg)`,
+            transform: `translate(${plane.x}px, ${plane.y}px) scale(${plane.scale}, ${plane.type === 2 && plane.rotation === 180 ? -plane.scale : plane.scale
+                }) rotate(${plane.rotation}deg)`,
             transition: 'transform 16ms linear'
         }}
     >
         <img
             src={PLANE_SVGS[plane.type].src}
             alt=""
-            className="w-12 h-12 svg-light-purple" // Increased from w-6 h-6 to w-12 h-12
+            className="w-12 h-12 svg-light-purple"
         />
     </div>
 ))
@@ -47,7 +48,11 @@ export function PlaneAnimation() {
 
     // Memoized plane creation function
     const createPlane = useCallback(() => {
-        const direction: 'horizontal' | 'vertical' = Math.random() > 0.5 ? 'horizontal' : 'vertical'
+        const type = Math.floor(Math.random() * PLANE_SVGS.length)
+        // Force horizontal direction for plane3 (type === 2)
+        const direction: 'horizontal' | 'vertical' = type === 2
+            ? 'horizontal'
+            : (Math.random() > 0.5 ? 'horizontal' : 'vertical')
         const isPositiveDirection = Math.random() > 0.5
 
         let x, y, rotation;
@@ -68,7 +73,7 @@ export function PlaneAnimation() {
             scale: MIN_SCALE + Math.random() * (MAX_SCALE - MIN_SCALE), // More controlled scale range
             rotation,
             speed: 1 + Math.random() * 2,
-            type: Math.floor(Math.random() * PLANE_SVGS.length),
+            type,
             direction
         }
     }, [])
