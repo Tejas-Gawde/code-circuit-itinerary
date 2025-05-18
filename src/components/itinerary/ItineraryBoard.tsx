@@ -38,7 +38,6 @@ export function ItineraryBoard() {
 
     if (!startDay || !finishDay) return;
 
-    // Moving within the same day
     if (startDay === finishDay) {
       const newActivityIds = Array.from(startDay.activityIds);
       newActivityIds.splice(source.index, 1);
@@ -59,7 +58,6 @@ export function ItineraryBoard() {
       return;
     }
 
-    // Moving from one day to another
     const startDayActivityIds = Array.from(startDay.activityIds);
     startDayActivityIds.splice(source.index, 1);
     const newStartDay = {
@@ -121,7 +119,6 @@ export function ItineraryBoard() {
       toast({
         title: "Activity Added",
         description: `"${newActivity.content}" added to ${day.title}.`,
-        variant: "default",
       });
 
       return {
@@ -135,7 +132,6 @@ export function ItineraryBoard() {
   const addDay = () => {
     setData(prevData => {
       if (!prevData || !prevData.days || !prevData.dayOrder) {
-        // This case should ideally not happen if data is initialized correctly
         console.error("Cannot add day: itinerary data is not properly initialized.");
         toast({
           title: "Error",
@@ -146,14 +142,12 @@ export function ItineraryBoard() {
       }
   
       const newDayNumber = Object.keys(prevData.days).length + 1;
-      // Using a more robust unique ID including a timestamp and random string
       const newDayId = `day-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   
       const newDay: DayType = {
         id: newDayId,
-        title: `Day ${newDayNumber}`, // Default title
+        title: `Day ${newDayNumber}`,
         activityIds: [],
-        // Consistent date formatting 'YYYY-MM-DD'
         date: new Date().toLocaleDateString('en-CA', { 
           year: 'numeric', 
           month: '2-digit', 
@@ -181,6 +175,82 @@ export function ItineraryBoard() {
     });
   };
 
+  const handleDeleteActivity = (activityId: string, dayId: string) => {
+    setData(prevData => {
+      if (!prevData || !prevData.activities || !prevData.days || !prevData.days[dayId]) return prevData;
+
+      const activityToDelete = prevData.activities[activityId];
+      const dayToUpdate = prevData.days[dayId];
+
+      // Create new activities object without the deleted activity
+      const newActivities = { ...prevData.activities };
+      delete newActivities[activityId];
+
+      // Create new day object with updated activityIds
+      const newDay = {
+        ...dayToUpdate,
+        activityIds: dayToUpdate.activityIds.filter(id => id !== activityId),
+      };
+
+      // Create new days object with the updated day
+      const newDays = {
+        ...prevData.days,
+        [dayId]: newDay,
+      };
+      
+      toast({
+        title: "Activity Deleted",
+        description: `"${activityToDelete?.content || 'Activity'}" removed from ${dayToUpdate.title}.`,
+        variant: "default", 
+      });
+
+      return {
+        ...prevData,
+        activities: newActivities,
+        days: newDays,
+      };
+    });
+  };
+
+  const handleDeleteDay = (dayId: string) => {
+    setData(prevData => {
+      if (!prevData || !prevData.days || !prevData.activities || !prevData.dayOrder) return prevData;
+
+      const dayToDelete = prevData.days[dayId];
+      if (!dayToDelete) return prevData;
+
+      // Get activity IDs of the day to be deleted
+      const activityIdsToDelete = dayToDelete.activityIds;
+
+      // Create new activities object excluding activities from the deleted day
+      const newActivities = { ...prevData.activities };
+      activityIdsToDelete.forEach(activityId => {
+        delete newActivities[activityId];
+      });
+
+      // Create new days object excluding the deleted day
+      const newDays = { ...prevData.days };
+      delete newDays[dayId];
+
+      // Create new dayOrder array excluding the deleted day's ID
+      const newDayOrder = prevData.dayOrder.filter(id => id !== dayId);
+
+      toast({
+        title: "Day Deleted",
+        description: `"${dayToDelete.title}" and all its activities have been removed.`,
+        variant: "destructive",
+      });
+
+      return {
+        ...prevData,
+        activities: newActivities,
+        days: newDays,
+        dayOrder: newDayOrder,
+      };
+    });
+  };
+
+
   if (!isClient) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -190,7 +260,6 @@ export function ItineraryBoard() {
   }
   
   if (!data || !data.days || !data.activities || !data.dayOrder) {
-    console.warn("Itinerary data from local storage is invalid or missing. Consider resetting.");
      return (
        <div className="flex flex-col justify-center items-center h-screen p-4 text-center">
          <p className="text-lg text-destructive mb-2">Error loading itinerary data.</p>
@@ -229,7 +298,9 @@ export function ItineraryBoard() {
                 key={day.id} 
                 day={day} 
                 activities={activities} 
-                onAddActivity={handleAddActivityToDay} 
+                onAddActivity={handleAddActivityToDay}
+                onDeleteActivity={handleDeleteActivity}
+                onDeleteDay={handleDeleteDay}
               />
             );
           })}
@@ -238,4 +309,3 @@ export function ItineraryBoard() {
     </DragDropContext>
   );
 }
-
