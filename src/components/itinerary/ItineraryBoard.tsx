@@ -10,7 +10,7 @@ import { DayColumn } from './DayColumn';
 // import { Button } from '@/components/ui/button'; // Add Day button commented out for now
 // import { PlusCircle } from 'lucide-react'; // Add Day button commented out for now
 import { useToast } from "@/hooks/use-toast";
-import { iconMap } from '@/config/icons'; // Import iconMap
+// import { iconMap } from '@/config/icons'; // No longer needed here for SelectedIconComponent
 
 const ITINERARY_STORAGE_KEY = 'itineraryFlowData';
 
@@ -20,6 +20,11 @@ export function ItineraryBoard() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Clear local storage on initial mount if a schema change is suspected or for testing
+    // WARNING: This will clear user data. Use with caution.
+    // if (typeof window !== "undefined") {
+    //  window.localStorage.removeItem(ITINERARY_STORAGE_KEY);
+    // }
     setIsClient(true);
   }, []);
 
@@ -96,13 +101,12 @@ export function ItineraryBoard() {
       if (!day) return prevData;
 
       const newActivityId = `activity-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      const SelectedIconComponent = iconMap[activityDetails.iconName] || iconMap['Package']; // Default to Package icon if not found
-
+      
       const newActivity: ActivityType = {
         id: newActivityId,
         content: activityDetails.title,
         description: activityDetails.description,
-        icon: SelectedIconComponent,
+        iconName: activityDetails.iconName, // Store iconName string
       };
 
       const updatedActivities = {
@@ -164,11 +168,25 @@ export function ItineraryBoard() {
   }
   
   if (!data || !data.days || !data.activities) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-lg text-destructive">Error loading itinerary data. Please refresh.</p>
-      </div>
-    );
+     // Attempt to re-initialize if data is corrupt or missing from localStorage
+     // This might happen if the structure changed and old localStorage data is incompatible.
+     // A more sophisticated migration strategy might be needed for production apps.
+    console.warn("Itinerary data from local storage is invalid or missing. Resetting to initial data.");
+    // setData(initialItineraryData); // This will trigger a re-render and save new initial data.
+    // return (
+    //   <div className="flex justify-center items-center h-screen">
+    //     <p className="text-lg text-muted-foreground">Re-initializing itinerary data. Please wait...</p>
+    //   </div>
+    // );
+    // For now, show an error, user might need to clear local storage manually if it's corrupted beyond recovery
+     return (
+       <div className="flex flex-col justify-center items-center h-screen p-4 text-center">
+         <p className="text-lg text-destructive mb-2">Error loading itinerary data.</p>
+         <p className="text-sm text-muted-foreground">
+           Your saved itinerary might be corrupted. Try clearing your browser&apos;s local storage for this site and refresh.
+         </p>
+       </div>
+     );
   }
 
   return (

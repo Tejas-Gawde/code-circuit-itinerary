@@ -5,6 +5,7 @@ import type { Activity } from '@/types/itinerary';
 import { Draggable } from '@hello-pangea/dnd';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { GripVertical } from 'lucide-react';
+import { iconMap, getDefaultIcon } from '@/config/icons'; // Import iconMap and getDefaultIcon
 
 interface ActivityCardProps {
   activity: Activity;
@@ -12,7 +13,10 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ activity, index }: ActivityCardProps) {
-  const IconComponent = activity.icon; // Assign to an uppercase variable
+  // Resolve iconName to the actual component
+  // Use a default icon if the iconName is not found or not specified
+  const IconComponent = (activity.iconName && iconMap[activity.iconName]) 
+                        || getDefaultIcon().IconComponent;
 
   return (
     <Draggable draggableId={activity.id} index={index}>
@@ -29,6 +33,7 @@ export function ActivityCard({ activity, index }: ActivityCardProps) {
           >
             <CardHeader className="flex flex-row items-center justify-between p-3 space-y-0">
               <div className="flex items-center gap-2">
+                {/* Render the resolved IconComponent */}
                 {IconComponent && <IconComponent className="h-5 w-5 text-primary" />}
                 <CardTitle className="text-base font-medium leading-none">{activity.content}</CardTitle>
               </div>

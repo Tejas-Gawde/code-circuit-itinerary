@@ -4,7 +4,7 @@ import type { Icon as LucideIcon } from 'lucide-react'; // Renamed to avoid conf
 export interface Activity {
   id: string;
   content: string;
-  icon?: LucideIcon; 
+  iconName?: string; // Changed from icon?: LucideIcon
   description?: string; 
 }
 
