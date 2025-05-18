@@ -15,8 +15,8 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ activity, index, onDelete }: ActivityCardProps) {
-  const IconComponent = (activity.iconName && iconMap[activity.iconName]) 
-                        || getDefaultIcon().IconComponent;
+  const IconComponent = (activity.iconName && iconMap[activity.iconName])
+    || getDefaultIcon().IconComponent;
 
   return (
     <Draggable draggableId={activity.id} index={index}>
@@ -24,19 +24,18 @@ export function ActivityCard({ activity, index, onDelete }: ActivityCardProps) {
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className="mb-2" 
+          className="mb-2"
         >
           <Card
-            className={`transition-shadow duration-200 ease-in-out ${
-              snapshot.isDragging ? 'shadow-xl scale-105 border-primary ring-2 ring-primary' : 'shadow-md hover:shadow-lg'
-            } bg-card`}
+            className={`transition-shadow duration-200 ease-in-out ${snapshot.isDragging ? 'shadow-xl scale-105 border-primary ring-2 ring-primary' : 'shadow-md hover:shadow-lg'
+              } bg-card`}
           >
             <CardHeader className="flex flex-row items-start justify-between p-3 space-y-0">
               <div className="flex items-center gap-2 flex-grow">
                 {IconComponent && <IconComponent className="h-5 w-5 text-primary flex-shrink-0" />}
                 <div className="flex-grow">
                   <CardTitle className="text-base font-medium leading-none">{activity.content}</CardTitle>
-                   {activity.description && (
+                  {activity.description && (
                     <CardDescription className="text-xs mt-1">{activity.description}</CardDescription>
                   )}
                 </div>
@@ -46,9 +45,9 @@ export function ActivityCard({ activity, index, onDelete }: ActivityCardProps) {
                   <GripVertical className="h-5 w-5" />
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="destructive"
                   size="icon"
-                  className="h-7 w-7 mt-1 text-muted-foreground hover:text-destructive"
+                  className="h-7 w-7 mt-1"
                   onClick={() => onDelete(activity.id)}
                   aria-label="Delete activity"
                 >

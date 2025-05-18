@@ -1,15 +1,15 @@
-
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import type { ItineraryData, Day as DayType, Activity as ActivityType } from '@/types/itinerary';
 import { initialItineraryData } from '@/data/initial-data';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { DayColumn } from './DayColumn';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggle } from '../ThemeToggle';
 
 const ITINERARY_STORAGE_KEY = 'itineraryFlowData';
 
@@ -17,6 +17,7 @@ export function ItineraryBoard() {
   const [data, setData] = useLocalStorage<ItineraryData>(ITINERARY_STORAGE_KEY, initialItineraryData);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -81,9 +82,9 @@ export function ItineraryBoard() {
       },
     }));
   };
-  
+
   const handleAddActivityToDay = (
-    dayId: string, 
+    dayId: string,
     activityDetails: { title: string; description: string; iconName: string }
   ) => {
     setData(prevData => {
@@ -93,7 +94,7 @@ export function ItineraryBoard() {
       if (!day) return prevData;
 
       const newActivityId = `activity-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      
+
       const newActivity: ActivityType = {
         id: newActivityId,
         content: activityDetails.title,
@@ -115,7 +116,7 @@ export function ItineraryBoard() {
         ...prevData.days,
         [dayId]: updatedDay,
       };
-      
+
       toast({
         title: "Activity Added",
         description: `"${newActivity.content}" added to ${day.title}.`,
@@ -140,33 +141,33 @@ export function ItineraryBoard() {
         });
         return prevData;
       }
-  
+
       const newDayNumber = Object.keys(prevData.days).length + 1;
       const newDayId = `day-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  
+
       const newDay: DayType = {
         id: newDayId,
         title: `Day ${newDayNumber}`,
         activityIds: [],
-        date: new Date().toLocaleDateString('en-CA', { 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit' 
+        date: new Date().toLocaleDateString('en-CA', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
         }),
       };
-  
+
       const updatedDays = {
         ...prevData.days,
         [newDayId]: newDay,
       };
-  
+
       const updatedDayOrder = [...prevData.dayOrder, newDayId];
-      
-      toast({ 
-        title: "Day Added", 
-        description: `${newDay.title} has been added.` 
+
+      toast({
+        title: "Day Added",
+        description: `${newDay.title} has been added.`
       });
-  
+
       return {
         ...prevData,
         days: updatedDays,
@@ -197,11 +198,11 @@ export function ItineraryBoard() {
         ...prevData.days,
         [dayId]: newDay,
       };
-      
+
       toast({
         title: "Activity Deleted",
         description: `"${activityToDelete?.content || 'Activity'}" removed from ${dayToUpdate.title}.`,
-        variant: "default", 
+        variant: "default",
       });
 
       return {
@@ -250,6 +251,30 @@ export function ItineraryBoard() {
     });
   };
 
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      // Get all column elements
+      const columns = Array.from(scrollContainerRef.current.children);
+      if (columns.length === 0) return;
+
+      // Get the first visible column
+      const columnWidth = columns[0].getBoundingClientRect().width;
+      const gap = 12; // gap-3 = 12px (3 * 4px)
+      const scrollAmount = columnWidth + gap;
+
+      const currentScroll = scrollContainerRef.current.scrollLeft;
+      const maxScroll = scrollContainerRef.current.scrollWidth - scrollContainerRef.current.clientWidth;
+
+      let newScrollPosition = direction === 'left'
+        ? Math.max(0, currentScroll - scrollAmount)
+        : Math.min(maxScroll, currentScroll + scrollAmount);
+
+      scrollContainerRef.current.scrollTo({
+        left: newScrollPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   if (!isClient) {
     return (
@@ -258,32 +283,59 @@ export function ItineraryBoard() {
       </div>
     );
   }
-  
+
   if (!data || !data.days || !data.activities || !data.dayOrder) {
-     return (
-       <div className="flex flex-col justify-center items-center h-screen p-4 text-center">
-         <p className="text-lg text-destructive mb-2">Error loading itinerary data.</p>
-         <p className="text-sm text-muted-foreground">
-           Your saved itinerary might be corrupted. Try clearing your browser&apos;s local storage for this site and refresh.
-         </p>
-       </div>
-     );
+    return (
+      <div className="flex flex-col justify-center items-center h-screen p-4 text-center">
+        <p className="text-lg text-destructive mb-2">Error loading itinerary data.</p>
+        <p className="text-sm text-muted-foreground">
+          Your saved itinerary might be corrupted. Try clearing your browser&apos;s local storage for this site and refresh.
+        </p>
+      </div>
+    );
   }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="p-4 md:p-6">
-        <div className="mb-6 flex justify-end">
-           <Button onClick={addDay} variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+        <div className="mb-6 flex justify-between items-center">
+          <div className="flex gap-2">
+            <Button
+              onClick={() => scroll('left')}
+              variant="outline"
+              className="shadow-sm hover:shadow-md transition-shadow"
+              size="icon"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Scroll left</span>
+            </Button>
+            <Button
+              onClick={() => scroll('right')}
+              variant="outline"
+              className="shadow-sm hover:shadow-md transition-shadow"
+              size="icon"
+            >
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Scroll right</span>
+            </Button>
+          </div>
+          <Button
+            onClick={addDay}
+            variant="outline"
+            className="shadow-sm hover:shadow-md transition-shadow"
+          >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Day
-          </Button> 
+          </Button>
         </div>
-        <div className="flex flex-row overflow-x-auto pb-4 -mx-2">
+        <div
+          ref={scrollContainerRef}
+          className="flex flex-row overflow-x-auto pb-4 -mx-2 gap-3 scrollbar-hide scroll-smooth"
+        >
           {data.dayOrder.map(dayId => {
             const day = data.days[dayId];
             if (!day) {
               console.warn(`Day with id ${dayId} not found in data.days. Skipping render.`);
-              return null; 
+              return null;
             }
             const activities = day.activityIds.map(activityId => {
               const activity = data.activities[activityId];
@@ -292,12 +344,12 @@ export function ItineraryBoard() {
               }
               return activity;
             }).filter(Boolean) as ActivityType[];
-            
+
             return (
-              <DayColumn 
-                key={day.id} 
-                day={day} 
-                activities={activities} 
+              <DayColumn
+                key={day.id}
+                day={day}
+                activities={activities}
                 onAddActivity={handleAddActivityToDay}
                 onDeleteActivity={handleDeleteActivity}
                 onDeleteDay={handleDeleteDay}

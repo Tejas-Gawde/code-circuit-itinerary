@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { availableIcons, getDefaultIcon, type IconInfo } from '@/config/icons';
-import type { Icon as LucideIcon } from 'lucide-react';
 
 interface AddActivityDialogProps {
   isOpen: boolean;
@@ -49,14 +48,12 @@ export function AddActivityDialog({ isOpen, onClose, onAddActivity, dayTitle }: 
   const handleSubmit = () => {
     if (!title.trim()) {
       // Basic validation, consider using react-hook-form for more complex scenarios
-      alert("Title is required."); 
+      alert("Title is required.");
       return;
     }
     onAddActivity({ title, description, iconName: selectedIconName });
     onClose(); // Close dialog after adding
   };
-
-  const CurrentIcon = availableIcons.find(icon => icon.name === selectedIconName)?.IconComponent || getDefaultIcon().IconComponent;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -75,7 +72,6 @@ export function AddActivityDialog({ isOpen, onClose, onAddActivity, dayTitle }: 
             <Select value={selectedIconName} onValueChange={setSelectedIconName}>
               <SelectTrigger className="col-span-3">
                 <div className="flex items-center gap-2">
-                  <CurrentIcon className="h-4 w-4" />
                   <SelectValue placeholder="Select an icon" />
                 </div>
               </SelectTrigger>
