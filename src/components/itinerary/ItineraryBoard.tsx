@@ -7,10 +7,9 @@ import type { ItineraryData, Day as DayType, Activity as ActivityType } from '@/
 import { initialItineraryData } from '@/data/initial-data';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { DayColumn } from './DayColumn';
-// import { Button } from '@/components/ui/button'; // Add Day button commented out for now
-// import { PlusCircle } from 'lucide-react'; // Add Day button commented out for now
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-// import { iconMap } from '@/config/icons'; // No longer needed here for SelectedIconComponent
 
 const ITINERARY_STORAGE_KEY = 'itineraryFlowData';
 
@@ -20,11 +19,6 @@ export function ItineraryBoard() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Clear local storage on initial mount if a schema change is suspected or for testing
-    // WARNING: This will clear user data. Use with caution.
-    // if (typeof window !== "undefined") {
-    //  window.localStorage.removeItem(ITINERARY_STORAGE_KEY);
-    // }
     setIsClient(true);
   }, []);
 
@@ -106,7 +100,7 @@ export function ItineraryBoard() {
         id: newActivityId,
         content: activityDetails.title,
         description: activityDetails.description,
-        iconName: activityDetails.iconName, // Store iconName string
+        iconName: activityDetails.iconName,
       };
 
       const updatedActivities = {
@@ -138,26 +132,54 @@ export function ItineraryBoard() {
     });
   };
 
-
-  // TODO: Implement Add Day functionality
-  // const addDay = () => {
-  //   const newDayId = `day-${Object.keys(data.days).length + 1}`;
-  //   const newDay: DayType = {
-  //     id: newDayId,
-  //     title: `Day ${Object.keys(data.days).length + 1}`,
-  //     activityIds: [],
-  //     date: new Date().toLocaleDateString('en-CA'), // Example date
-  //   };
-  //   setData(prevData => ({
-  //     ...prevData,
-  //     days: {
-  //       ...prevData.days,
-  //       [newDayId]: newDay,
-  //     },
-  //     dayOrder: [...prevData.dayOrder, newDayId],
-  //   }));
-  //    toast({ title: "Day Added", description: `${newDay.title} has been added.` });
-  // };
+  const addDay = () => {
+    setData(prevData => {
+      if (!prevData || !prevData.days || !prevData.dayOrder) {
+        // This case should ideally not happen if data is initialized correctly
+        console.error("Cannot add day: itinerary data is not properly initialized.");
+        toast({
+          title: "Error",
+          description: "Could not add day. Itinerary data missing.",
+          variant: "destructive",
+        });
+        return prevData;
+      }
+  
+      const newDayNumber = Object.keys(prevData.days).length + 1;
+      // Using a more robust unique ID including a timestamp and random string
+      const newDayId = `day-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  
+      const newDay: DayType = {
+        id: newDayId,
+        title: `Day ${newDayNumber}`, // Default title
+        activityIds: [],
+        // Consistent date formatting 'YYYY-MM-DD'
+        date: new Date().toLocaleDateString('en-CA', { 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit' 
+        }),
+      };
+  
+      const updatedDays = {
+        ...prevData.days,
+        [newDayId]: newDay,
+      };
+  
+      const updatedDayOrder = [...prevData.dayOrder, newDayId];
+      
+      toast({ 
+        title: "Day Added", 
+        description: `${newDay.title} has been added.` 
+      });
+  
+      return {
+        ...prevData,
+        days: updatedDays,
+        dayOrder: updatedDayOrder,
+      };
+    });
+  };
 
   if (!isClient) {
     return (
@@ -167,18 +189,8 @@ export function ItineraryBoard() {
     );
   }
   
-  if (!data || !data.days || !data.activities) {
-     // Attempt to re-initialize if data is corrupt or missing from localStorage
-     // This might happen if the structure changed and old localStorage data is incompatible.
-     // A more sophisticated migration strategy might be needed for production apps.
-    console.warn("Itinerary data from local storage is invalid or missing. Resetting to initial data.");
-    // setData(initialItineraryData); // This will trigger a re-render and save new initial data.
-    // return (
-    //   <div className="flex justify-center items-center h-screen">
-    //     <p className="text-lg text-muted-foreground">Re-initializing itinerary data. Please wait...</p>
-    //   </div>
-    // );
-    // For now, show an error, user might need to clear local storage manually if it's corrupted beyond recovery
+  if (!data || !data.days || !data.activities || !data.dayOrder) {
+    console.warn("Itinerary data from local storage is invalid or missing. Consider resetting.");
      return (
        <div className="flex flex-col justify-center items-center h-screen p-4 text-center">
          <p className="text-lg text-destructive mb-2">Error loading itinerary data.</p>
@@ -192,18 +204,26 @@ export function ItineraryBoard() {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="p-4 md:p-6">
-        {/* Placeholder for future actions like "Add Day" 
         <div className="mb-6 flex justify-end">
-           <Button onClick={addDay} variant="outline">
+           <Button onClick={addDay} variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
             <PlusCircle className="mr-2 h-4 w-4" /> Add Day
           </Button> 
         </div>
-        */}
         <div className="flex flex-row overflow-x-auto pb-4 -mx-2">
           {data.dayOrder.map(dayId => {
             const day = data.days[dayId];
-            if (!day) return null; 
-            const activities = day.activityIds.map(activityId => data.activities[activityId]).filter(Boolean) as ActivityType[];
+            if (!day) {
+              console.warn(`Day with id ${dayId} not found in data.days. Skipping render.`);
+              return null; 
+            }
+            const activities = day.activityIds.map(activityId => {
+              const activity = data.activities[activityId];
+              if (!activity) {
+                console.warn(`Activity with id ${activityId} not found for day ${dayId}.`);
+              }
+              return activity;
+            }).filter(Boolean) as ActivityType[];
+            
             return (
               <DayColumn 
                 key={day.id} 
@@ -218,3 +238,4 @@ export function ItineraryBoard() {
     </DragDropContext>
   );
 }
+
